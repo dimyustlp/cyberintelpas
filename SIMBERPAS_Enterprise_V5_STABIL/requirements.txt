@@ -1,0 +1,11 @@
+streamlit>=1.60,<2
+supabase>=2.31,<3
+pandas>=2.2,<3
+plotly>=6,<7
+pydeck>=0.9,<1
+openpyxl>=3.1,<4
+requests>=2.32,<3
+beautifulsoup4>=4.12,<5
+bcrypt>=4.2,<6
+openai>=1.60,<3
+pytest>=8,<10
