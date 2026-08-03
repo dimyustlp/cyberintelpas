@@ -1,0 +1,39 @@
+CYBERINTELPAS V5.5 — SAFE PULL GOOGLE SPREADSHEET SYNC
+
+TUJUAN
+Crawler Google Apps Script lama tetap utuh. CyberIntelPAS membaca Spreadsheet secara read-only melalui Google Sheets API, lalu menyimpan data baru/perubahan ke Supabase.
+
+ARSITEKTUR
+Crawler lama -> Google Spreadsheet -> Supabase Edge Function -> Supabase Database -> CyberIntelPAS
+
+URUTAN PEMASANGAN
+1. Cadangkan proyek dan database.
+2. Jalankan sql/migration_v5_5_safe_pull_sync.sql di Supabase SQL Editor.
+3. Buat Google Cloud service account dan aktifkan Google Sheets API.
+4. Bagikan Spreadsheet kepada email service account dengan akses Viewer.
+5. Deploy Edge Function dari supabase/functions/sheet-sync/index.ts dengan nama sheet-sync.
+6. Isi Edge Function Secrets:
+   GOOGLE_SERVICE_ACCOUNT_EMAIL
+   GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+   GOOGLE_SPREADSHEET_ID
+   GOOGLE_SHEET_NAME
+   GOOGLE_SHEET_RANGE
+   SHEET_SYNC_TOKEN
+7. Deploy fungsi dengan JWT verification dimatikan karena fungsi memakai token header sendiri.
+8. Uji fungsi manual melalui menu Sinkronisasi Spreadsheet atau HTTP request.
+9. Jalankan sql/setup_v5_5_cron_template.sql setelah placeholder diganti.
+10. Tambahkan SHEET_SYNC_TOKEN pada Streamlit Secrets, lalu reboot aplikasi.
+11. Periksa menu Sinkronisasi Spreadsheet dan log Supabase Edge Function.
+
+NILAI SPREADSHEET
+GOOGLE_SPREADSHEET_ID=1uAA7KfJVnsgUbhKDKfsnYwDYtOEkN1rgsXahbnxPy54
+GOOGLE_SHEET_NAME=Sheet1
+GOOGLE_SHEET_RANGE=Sheet1!A:I
+
+PENTING
+- Jangan hapus atau mengubah Apps Script crawler lama.
+- Service account hanya diberi akses Viewer.
+- Jangan menaruh private key Google atau service role Supabase di GitHub/Streamlit.
+- SHEET_SYNC_TOKEN bukan private key Google. Token ini hanya melindungi endpoint Edge Function.
+- Data Spreadsheet masuk sebagai Belum Ditelaah.
+- Risiko Tinggi/Kritis langsung menghasilkan Peringatan Awal.

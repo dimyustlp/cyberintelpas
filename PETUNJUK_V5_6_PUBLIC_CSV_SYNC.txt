@@ -1,0 +1,47 @@
+CYBERINTELPAS V5.6 — PETUNJUK PEMASANGAN PUBLIC CSV SYNC
+
+ARSITEKTUR
+Crawler Apps Script lama -> Google Spreadsheet -> publikasi CSV read-only -> Supabase Edge Function -> database -> CyberIntelPAS.
+Crawler lama tidak dihapus dan tidak diubah.
+
+URL CSV YANG DIGUNAKAN
+https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0-o2qi5vHXxjnwxPAB4wxtAo8ZdmmVjG-wMvOLSXKjNWXOLCyyR0-1F4aOUn9SnFY8NtFvZeSzaft/pub?output=csv
+
+TAHAP A — DATABASE
+1. Supabase -> SQL Editor -> New query.
+2. Jalankan seluruh isi sql/migration_v5_6_public_csv_sync.sql.
+3. Pastikan pemeriksaan paling bawah bernilai true.
+
+TAHAP B — EDGE FUNCTION
+1. Buat/deploy fungsi bernama sheet-sync menggunakan supabase/functions/sheet-sync/index.ts.
+2. Tambahkan Edge Function secrets:
+   SHEET_SYNC_TOKEN = token acak panjang
+   PUBLIC_SHEET_CSV_URL = URL CSV di atas (opsional karena sudah ada fallback pada kode)
+3. SUPABASE_URL dan SUPABASE_SERVICE_ROLE_KEY tersedia otomatis pada hosted Edge Functions Supabase.
+4. Uji fungsi dengan header x-sync-token yang sesuai.
+
+TAHAP C — STREAMLIT SECRETS
+Tambahkan:
+SHEET_SYNC_TOKEN = "token yang sama"
+SHEET_SYNC_FUNCTION_URL = "https://PROJECT_REF.supabase.co/functions/v1/sheet-sync"
+PUBLIC_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0-o2qi5vHXxjnwxPAB4wxtAo8ZdmmVjG-wMvOLSXKjNWXOLCyyR0-1F4aOUn9SnFY8NtFvZeSzaft/pub?output=csv"
+GOOGLE_SHEET_NAME = "Sheet1"
+
+TAHAP D — UJI MANUAL
+1. Jalankan CyberIntelPAS.
+2. Login sebagai Administrator Utama Sistem.
+3. Buka Sinkronisasi Spreadsheet.
+4. Klik SINKRONKAN SEKARANG.
+5. Periksa Pusat Data Berita dan log sinkronisasi.
+
+TAHAP E — CRON
+1. Setelah pengujian manual berhasil, buka sql/setup_v5_6_public_csv_cron.sql.
+2. Ganti PROJECT_REF dan TOKEN_ACAK_PANJANG.
+3. Jalankan pada Supabase SQL Editor.
+4. Jadwal berjalan setiap 5 menit.
+
+PENTING
+- Jangan hapus Apps Script crawler lama.
+- Jangan unggah secrets.toml ke GitHub.
+- Spreadsheet publik dapat dibaca siapa pun yang memiliki URL.
+- Data Spreadsheet hanya dibaca. Tidak ada operasi update/delete terhadap Google Sheet.

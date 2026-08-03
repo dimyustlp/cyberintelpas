@@ -157,7 +157,11 @@ def ensure_news_columns(df: pd.DataFrame) -> pd.DataFrame:
         "status_verifikasi": "Belum Ditelaah", "status_sebelumnya": "", "kata_kunci": None,
         "lokasi": "", "tingkat_perhatian": "Rendah", "ai_provider": "rules",
         "ai_confidence": None, "source_type": "manual", "source_external_id": "",
-        "content_hash": "", "submitted_by": "", "submitted_at": pd.NaT,
+        "source_sheet_id": "", "source_sheet_name": "", "source_row_number": None,
+        "source_updated_at": pd.NaT, "last_synced_at": pd.NaT, "sync_status": "",
+        "sync_error": "", "detected_at": pd.NaT, "raw_analysis": "",
+        "rekomendasi": "", "status_tindak_lanjut": "", "petugas_respon": "",
+        "waktu_respon": pd.NaT, "content_hash": "", "submitted_by": "", "submitted_at": pd.NaT,
         "reviewed_by": "", "reviewed_at": pd.NaT, "verified_by": "", "verified_at": pd.NaT,
         "review_note": "", "rejection_reason": "", "archived_by": "", "archived_at": pd.NaT,
         "deleted_at": pd.NaT, "deleted_by": "",
@@ -170,7 +174,8 @@ def ensure_news_columns(df: pd.DataFrame) -> pd.DataFrame:
             out[col] = out[col].where(out[col].notna(), default)
     for col in [
         "created_at", "updated_at", "tanggal_publikasi", "submitted_at", "reviewed_at",
-        "verified_at", "archived_at", "deleted_at",
+        "verified_at", "archived_at", "deleted_at", "source_updated_at", "last_synced_at",
+        "detected_at", "waktu_respon",
     ]:
         out[col] = pd.to_datetime(out[col], errors="coerce", utc=True)
     status_aliases = {

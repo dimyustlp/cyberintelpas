@@ -1,0 +1,6 @@
+PYTHON COMPILE: LULUS
+PYTEST RETURN CODE: 0
+
+......................                                                   [100%]
+22 passed in 0.36s
+

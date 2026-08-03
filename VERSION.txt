@@ -1,4 +1,1 @@
-SIMBERPAS V5.3.0
-Internal Pusat & Early Warning
-Build: 2026-08-03
-Google Spreadsheet sync: deferred
+5.7.0

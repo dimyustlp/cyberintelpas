@@ -1,0 +1,46 @@
+CYBERINTELPAS V5.7 — PENYELESAIAN INTEGRASI SPREADSHEET
+
+FITUR
+1. Menu Sinkronisasi Spreadsheet dan riwayat log.
+2. Dashboard menampilkan berita Spreadsheet, input manual, dan status sinkronisasi.
+3. Warning News langsung membaca berita Tinggi/Kritis hasil sinkronisasi.
+4. Audit Aktivitas memiliki tab Sinkronisasi Spreadsheet.
+5. Menu Pemetaan UPT untuk berita dengan nama_upt kosong.
+6. GitHub Actions tersedia sebagai pemanggil otomatis setiap 5 menit.
+
+CARA MEMASANG
+1. Hentikan aplikasi lokal dengan Ctrl+C.
+2. Cadangkan folder kerja utama.
+3. Ekstrak ZIP V5.7.
+4. Salin semua isi folder hasil ekstrak ke folder kerja CyberIntelPAS.
+5. Pilih Replace files in destination.
+6. JANGAN hapus folder .git dan file .streamlit/secrets.toml milik Anda.
+7. Pastikan Secrets lokal/online memiliki:
+   SUPABASE_URL
+   SUPABASE_KEY
+   SHEET_SYNC_TOKEN
+8. Jalankan lokal:
+   py -m streamlit run app.py
+9. Login sebagai Administrator Utama Sistem.
+10. Periksa menu:
+    - Sinkronisasi Spreadsheet
+    - Pemetaan UPT
+    - Audit Aktivitas
+    - Warning News
+
+UPDATE GITHUB
+1. Pastikan file .github/workflows/cyberintelpas_sheet_sync.yml ikut tersalin.
+2. Jalankan:
+   git add .
+   git commit -m "Integrasi lengkap Spreadsheet CyberIntelPAS V5.7"
+   git push origin main
+3. Di GitHub Repository Secrets pastikan tersedia:
+   SUPABASE_ANON_KEY
+   SHEET_SYNC_TOKEN
+4. Buka Actions lalu jalankan workflow secara manual satu kali.
+
+CATATAN PEMETAAN UPT
+- Berita dengan nama_upt kosong tetap tersimpan.
+- Menu Pemetaan UPT memberikan kandidat berdasarkan nama, jenis UPT, dan lokasi yang muncul dalam judul/analisis.
+- Analis tetap menentukan pilihan akhir.
+- Setelah disimpan, berita mulai memengaruhi marker dan statistik UPT.

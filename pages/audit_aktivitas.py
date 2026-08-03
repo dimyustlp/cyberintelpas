@@ -9,6 +9,7 @@ from services.audit_service import log_action
 from components.layout import page_header, section_header
 from services.access_control import require_permission
 from services.database import fetch_audit_df
+from services.sheet_sync_service import fetch_sync_logs
 from services.export_service import excel_bytes
 
 user = require_permission("view_audit")
@@ -57,21 +58,28 @@ if q:
     filtered = filtered[mask]
 
 section_header("Riwayat Aktivitas", f"{len(filtered)} aktivitas ditemukan.")
-st.download_button(
-    "Unduh audit ke Excel",
-    data=excel_bytes(filtered, "Audit"),
-    file_name="SIMBERPAS_Audit_Aktivitas.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    on_click=log_action,
-    args=("export", "audit_log", "filter", user.username, user.role, {"rows": len(filtered), "format": "xlsx"}),
-)
-
-display = filtered.copy()
-if "metadata" in display.columns:
-    display["metadata"] = display["metadata"].map(lambda x: json.dumps(x, ensure_ascii=False) if isinstance(x, (dict, list)) else str(x))
-st.dataframe(
-    display[[c for c in ["created_at", "actor_username", "actor_role", "action", "entity", "entity_id", "metadata"] if c in display.columns]],
-    width="stretch",
-    hide_index=True,
-    column_config={"created_at": st.column_config.DatetimeColumn("Waktu", format="DD-MM-YYYY HH:mm:ss")},
-)
+tab_audit, tab_sync = st.tabs(["Aktivitas Pengguna", "Sinkronisasi Spreadsheet"])
+with tab_audit:
+    st.download_button(
+        "Unduh audit ke Excel",
+        data=excel_bytes(filtered, "Audit"),
+        file_name="SIMBERPAS_Audit_Aktivitas.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        on_click=log_action,
+        args=("export", "audit_log", "filter", user.username, user.role, {"rows": len(filtered), "format": "xlsx"}),
+    )
+    display = filtered.copy()
+    if "metadata" in display.columns:
+        display["metadata"] = display["metadata"].map(lambda x: json.dumps(x, ensure_ascii=False) if isinstance(x, (dict, list)) else str(x))
+    st.dataframe(
+        display[[c for c in ["created_at", "actor_username", "actor_role", "action", "entity", "entity_id", "metadata"] if c in display.columns]],
+        width="stretch", hide_index=True,
+        column_config={"created_at": st.column_config.DatetimeColumn("Waktu", format="DD-MM-YYYY HH:mm:ss")},
+    )
+with tab_sync:
+    sync_logs = fetch_sync_logs(limit=200)
+    if sync_logs.empty:
+        st.info("Belum ada log sinkronisasi.")
+    else:
+        cols = [c for c in ["started_at", "finished_at", "status", "trigger_type", "rows_seen", "rows_inserted", "rows_updated", "rows_skipped", "rows_failed", "duration_ms", "message", "error_detail"] if c in sync_logs.columns]
+        st.dataframe(sync_logs[cols], width="stretch", hide_index=True)

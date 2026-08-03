@@ -79,6 +79,10 @@ if has_permission(user, "manage_coordinates"):
     admin_pages.append(
         st.Page("pages/koordinat_upt.py", title="Koordinat UPT", icon=":material/location_on:")
     )
+if has_permission(user, "manage_sync"):
+    admin_pages.append(
+        st.Page("pages/sinkronisasi_spreadsheet.py", title="Sinkronisasi Spreadsheet", icon=":material/sync:")
+    )
 if has_permission(user, "view_audit"):
     admin_pages.append(
         st.Page("pages/audit_aktivitas.py", title="Audit Aktivitas", icon=":material/history:")

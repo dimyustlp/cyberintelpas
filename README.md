@@ -52,3 +52,8 @@ Gunakan petunjuk `PETUNJUK_UPDATE_V5_3_INTERNAL_PUSAT.txt`.
 - Jangan membagikan `SUPABASE_KEY`, `OPENAI_API_KEY`, kode akses, atau kata sandi.
 - Gunakan service-role key hanya pada server Streamlit.
 - Lakukan pencadangan database dan folder aplikasi sebelum migrasi.
+
+
+## V5.6 Public CSV Sync
+
+Sumber Spreadsheet dibaca read-only dari `https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0-o2qi5vHXxjnwxPAB4wxtAo8ZdmmVjG-wMvOLSXKjNWXOLCyyR0-1F4aOUn9SnFY8NtFvZeSzaft/pub?output=csv` melalui Supabase Edge Function. Tidak membutuhkan service account Google.

@@ -58,6 +58,9 @@ if has_permission(user, "review_news"):
     pages["Operasional"].append(
         st.Page("pages/pusat_telaah.py", title="Pusat Telaah", icon=":material/fact_check:")
     )
+    pages["Operasional"].append(
+        st.Page("pages/pemetaan_upt.py", title="Pemetaan UPT", icon=":material/account_tree:")
+    )
 if has_permission(user, "view_data"):
     pages["Operasional"].append(
         st.Page("pages/data_berita.py", title="Pusat Data Berita", icon=":material/database:")
@@ -78,6 +81,10 @@ if has_permission(user, "manage_users"):
 if has_permission(user, "manage_coordinates"):
     admin_pages.append(
         st.Page("pages/koordinat_upt.py", title="Koordinat UPT", icon=":material/location_on:")
+    )
+if has_permission(user, "manage_sync"):
+    admin_pages.append(
+        st.Page("pages/sinkronisasi_spreadsheet.py", title="Sinkronisasi Spreadsheet", icon=":material/sync:")
     )
 if has_permission(user, "view_audit"):
     admin_pages.append(

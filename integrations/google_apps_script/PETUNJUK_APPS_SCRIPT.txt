@@ -1,0 +1,22 @@
+CYBERINTELPAS — PEMASANGAN GOOGLE APPS SCRIPT
+
+1. Buka Google Spreadsheet sumber.
+2. Pilih Extensions / Ekstensi → Apps Script.
+3. Hapus contoh kode, lalu tempel seluruh isi CyberIntelPAS_Sync.gs.
+4. Buka Project Settings → Script Properties. Tambahkan:
+   SUPABASE_URL = URL proyek Supabase tanpa /rest/v1
+   SUPABASE_SERVICE_ROLE_KEY = service_role/secret key Supabase
+   SPREADSHEET_ID = 1uAA7KfJVnsgUbhKDKfsnYwDYtOEkN1rgsXahbnxPy54
+   SHEET_NAME = Sheet1
+   SYNC_TOKEN = buat token acak panjang untuk webhook manual
+5. Simpan. Jalankan setupCyberIntelPasSync sekali dan izinkan akses.
+6. Jalankan runCyberIntelPasSyncNow sekali untuk pengujian.
+7. Untuk tombol Sinkronkan Sekarang di aplikasi, Deploy → New deployment → Web app.
+   Execute as: Me. Who has access: Anyone. Salin URL deployment.
+8. Isi Streamlit Secrets:
+   GOOGLE_SHEET_ID = "1uAA7KfJVnsgUbhKDKfsnYwDYtOEkN1rgsXahbnxPy54"
+   GOOGLE_SHEET_NAME = "Sheet1"
+   GOOGLE_SYNC_WEBHOOK_URL = "URL_WEB_APP"
+   GOOGLE_SYNC_TOKEN = "TOKEN_YANG_SAMA"
+
+PENTING: Jangan menaruh SUPABASE_SERVICE_ROLE_KEY di sel Spreadsheet, GitHub, atau Streamlit client. Key hanya disimpan pada Script Properties.

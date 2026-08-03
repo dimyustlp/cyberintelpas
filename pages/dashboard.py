@@ -14,6 +14,7 @@ from services.auth_service import current_user
 from services.database import fetch_news_df, fetch_upt_df
 from services.geo_service import build_upt_status
 from services.news_service import normalize_status, warning_state
+from services.sheet_sync_service import sync_health
 
 user = require_permission("view_dashboard")
 page_header(
@@ -31,6 +32,9 @@ if not news.empty:
     if user.role == "executive_viewer":
         news = news[news["status_verifikasi"].eq("Terverifikasi") | news["warning_state"].eq("preliminary")].copy()
 status_map = build_upt_status(upt, news)
+sync = sync_health()
+sheet_count = int(news.get("source_type", pd.Series("manual", index=news.index)).eq("google_sheet").sum()) if not news.empty else 0
+manual_count = int(news.get("source_type", pd.Series("manual", index=news.index)).eq("manual").sum()) if not news.empty else 0
 
 verified_news = news[news["status_verifikasi"].astype(str) == "Terverifikasi"].copy() if not news.empty else news
 pending_count = int(news["status_verifikasi"].isin(["Belum Ditelaah", "Perlu Koreksi"]).sum()) if not news.empty else 0
@@ -57,6 +61,8 @@ kpi_grid([
     {"icon": "🟥", "title": "UPT Merah Tua", "value": format_number(critical_upt), "foot": "Tinggi/kritis terverifikasi", "accent": "#650000"},
     {"icon": "🔴", "title": "UPT Merah", "value": format_number(negative_upt), "foot": "Negatif terverifikasi", "accent": "#D00000"},
     {"icon": "🏢", "title": "UPT Terpantau", "value": format_number(metrics.active_upt), "foot": f"dari {len(upt)} UPT", "accent": "#16845B"},
+    {"icon": "☁️", "title": "Spreadsheet", "value": format_number(sheet_count), "foot": f"Sinkron terakhir: {sync['status']}", "accent": "#0F766E"},
+    {"icon": "📝", "title": "Input Manual", "value": format_number(manual_count), "foot": "Tetap aktif", "accent": "#6B4F9B"},
     {"icon": "⏱️", "title": "Hari Ini", "value": format_number(metrics.today), "foot": f"{delta:+d} dibanding kemarin", "accent": "#D4A72C"},
 ])
 

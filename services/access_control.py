@@ -28,7 +28,7 @@ PERMISSIONS = {
         "view_dashboard", "view_all", "view_data", "view_map", "view_warning",
         "create_news", "analyze_news", "edit_news", "review_news", "verify_news",
         "archive_news", "upload_attachments", "use_ai", "export_reports",
-        "manage_users", "manage_settings", "manage_coordinates", "view_audit",
+        "manage_users", "manage_settings", "manage_coordinates", "manage_sync", "view_audit",
         "view_sensitive",
     },
     "news_analyst": {

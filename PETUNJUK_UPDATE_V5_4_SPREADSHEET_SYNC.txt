@@ -1,0 +1,29 @@
+CYBERINTELPAS V5.4 — UPDATE GOOGLE SPREADSHEET SYNC
+
+A. DATABASE
+1. Backup database.
+2. Supabase → SQL Editor → New query.
+3. Jalankan CYBERINTELPAS_V5_4_MIGRATION_SPREADSHEET.sql.
+4. Pastikan tiga hasil pemeriksaan bernilai true.
+
+B. APLIKASI
+1. Salin seluruh paket ke folder kerja CyberIntelPAS.
+2. Pertahankan .streamlit/secrets.toml.
+3. Jalankan lokal dan pastikan menu Sinkronisasi Spreadsheet muncul untuk Administrator Utama Sistem.
+
+C. GOOGLE APPS SCRIPT
+Ikuti integrations/google_apps_script/PETUNJUK_APPS_SCRIPT.txt.
+
+D. GITHUB/ONLINE
+1. git add .
+2. git commit -m "Tambah sinkronisasi Google Spreadsheet"
+3. git push origin main
+4. Tambahkan GOOGLE_SHEET_ID, GOOGLE_SHEET_NAME, GOOGLE_SYNC_WEBHOOK_URL, GOOGLE_SYNC_TOKEN pada Streamlit Secrets.
+5. Reboot aplikasi.
+
+E. PERILAKU DATA
+- Data Spreadsheet masuk sebagai source_type=google_sheet dan status Belum Ditelaah.
+- Input manual tetap source_type=manual.
+- Risiko Tinggi/Kritis langsung muncul sebagai Peringatan Awal.
+- Upsert berdasarkan source_type + source_external_id mencegah duplikat.
+- Data terverifikasi dapat ter-update pada kolom sumber jika URL yang sama berubah. Telaah analis tetap diperlukan untuk status resmi.

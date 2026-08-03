@@ -29,7 +29,13 @@ if importlib.util.find_spec("streamlit") is None:
     st.session_state = {}
     sys.modules["streamlit"] = st
 
-if importlib.util.find_spec("supabase") is None:
+try:
+    import supabase as _supabase_check
+    _supabase_available = hasattr(_supabase_check, "Client") and hasattr(_supabase_check, "create_client")
+except Exception:
+    _supabase_available = False
+
+if not _supabase_available:
     supabase = types.ModuleType("supabase")
     supabase.Client = object
     supabase.create_client = lambda *args, **kwargs: None

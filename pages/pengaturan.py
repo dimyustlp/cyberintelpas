@@ -19,16 +19,17 @@ page_header(
 cfg = get_config()
 
 required_tables = [
-    "app_users", "audit_log", "berita_status_history", "berita_attachments",
+    "app_users", "audit_log", "berita_status_history", "berita_attachments", "sheet_sync_log",
 ]
 status = {table: table_exists(table) for table in required_tables}
 
-c1, c2, c3, c4, c5 = st.columns(5)
+c1, c2, c3, c4, c5, c6 = st.columns(6)
 c1.metric("Supabase", "Terhubung" if cfg.has_supabase else "Demo")
 c2.metric("Workflow", "Aktif" if status["berita_status_history"] else "Belum")
 c3.metric("Lampiran", "Aktif" if status["berita_attachments"] else "Belum")
 c4.metric("AI Provider", "Aktif" if cfg.has_openai else "Fallback Lokal")
 c5.metric("Audit", "Aktif" if status["audit_log"] else "Belum")
+c6.metric("Sheet Sync", "Aktif" if status["sheet_sync_log"] else "Belum")
 
 section_header("Migration Database", "Diperlukan satu kali untuk seluruh fitur V5.3.")
 if all(status.values()):
@@ -83,6 +84,8 @@ files = [
     "data/master_upt_coordinates.csv",
     "data/master_upt_coordinates.xlsx",
     "PETUNJUK_UPDATE_V5_3_INTERNAL_PUSAT.txt",
+    "sql/migration_v5_4_spreadsheet_sync.sql",
+    "integrations/google_apps_script/CyberIntelPAS_Sync.gs",
 ]
 for rel in files:
     path = root / rel
