@@ -1,0 +1,56 @@
+HASIL PENGUJIAN SIMBERPAS V5.3
+================================
+Tanggal build: 3 Agustus 2026
+Rilis: Internal Pusat & Early Warning
+
+1. Kompilasi seluruh file Python
+   Hasil: LULUS
+
+2. Unit/regression test
+   Hasil: 17 lulus, 0 gagal
+
+3. Pemeriksaan master UPT
+   Total baris: 492
+   Nama UPT unik: 492
+   Hasil: LULUS
+
+4. Pemeriksaan role access
+   - Administrator Utama Sistem
+   - Analis Pemberitaan Strategis
+   - Operator Akuisisi Data Berita
+   - Pimpinan Eksekutif
+   Hasil: LULUS melalui unit test
+
+5. Pemeriksaan workflow
+   - Belum Ditelaah
+   - Perlu Koreksi
+   - Terverifikasi
+   - Tidak Valid
+   - Diarsipkan
+   Hasil: LULUS melalui unit test
+
+6. Pemeriksaan early warning
+   - Tinggi/Kritis belum ditelaah = preliminary
+   - Tinggi/Kritis terverifikasi = verified
+   - Tidak Valid/Diarsipkan = tidak aktif
+   Hasil: LULUS melalui unit test
+
+7. Pemeriksaan marker peta
+   - warning awal tetap abu-abu dengan tanda seru;
+   - kritis terverifikasi merah tua;
+   - negatif terverifikasi merah;
+   - UPT tanpa berita biru.
+   Hasil: LULUS melalui unit test
+
+8. Pemeriksaan file rahasia
+   .streamlit/secrets.toml: TIDAK ADA dalam paket
+   Pola API key nyata: TIDAK DITEMUKAN
+
+9. Pengujian server Streamlit langsung
+   Belum dapat dijalankan di lingkungan build karena modul Streamlit tidak
+   terpasang pada runtime pembuat paket. Kompilasi dan unit test telah lulus,
+   tetapi uji integrasi dengan Supabase, Storage, akun nyata, dan Streamlit
+   Cloud harus dilakukan pada komputer/proyek pengguna setelah migration SQL.
+
+10. Sinkronisasi Google Spreadsheet
+    Tidak termasuk dalam rilis ini sesuai keputusan pengguna.

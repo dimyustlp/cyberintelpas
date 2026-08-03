@@ -1,0 +1,125 @@
+SIMBERPAS V5.3 — PETUNJUK PEMBARUAN INTERNAL PUSAT
+====================================================
+
+PENTING
+-------
+1. Pembaruan ini mengubah peran dan alur verifikasi.
+2. Data berita, UPT, akun, lampiran, dan audit tidak dihapus.
+3. Sinkronisasi Google Spreadsheet belum disertakan.
+4. Jangan menyalin atau mengunggah secrets.toml ke GitHub.
+
+A. CADANGKAN SISTEM
+-------------------
+1. Hentikan Streamlit dengan Ctrl + C.
+2. Salin folder proyek aktif ke folder cadangan.
+3. Simpan file .streamlit\secrets.toml secara terpisah.
+4. Lakukan backup database Supabase jika tersedia.
+
+B. JALANKAN MIGRASI DATABASE
+----------------------------
+1. Buka Supabase.
+2. Pilih SQL Editor.
+3. Klik New query.
+4. Buka file:
+   sql\migration_v5_3_internal_pusat.sql
+5. Salin seluruh isi file ke SQL Editor.
+6. Klik Run.
+7. Pada hasil paling bawah, pastikan seluruh kolom *_ok dan *_data_ok bernilai true.
+8. Tunggu 10–20 detik agar schema cache PostgREST diperbarui.
+
+Migrasi akan mengubah:
+- admin_pusat/admin_kanwil menjadi news_analyst;
+- operator_upt menjadi news_intake;
+- viewer menjadi executive_viewer;
+- Draft/Diajukan/Sedang Diperiksa menjadi Belum Ditelaah;
+- Perlu Perbaikan menjadi Perlu Koreksi;
+- Ditolak menjadi Tidak Valid.
+
+C. GANTI FILE APLIKASI
+----------------------
+1. Ekstrak ZIP V5.3.
+2. Salin seluruh isi hasil ekstrak ke folder aplikasi aktif.
+3. Pilih Replace files in the destination.
+4. Jangan mengganti .streamlit\secrets.toml milik Anda.
+
+D. INSTAL DAN JALANKAN
+----------------------
+Buka CMD di folder yang berisi app.py, kemudian ketik tanpa tanda backtick:
+
+python -m pip install -r requirements.txt
+python -m streamlit run app.py
+
+Jika perintah python tidak dikenali, gunakan:
+
+py -m pip install -r requirements.txt
+py -m streamlit run app.py
+
+E. UJI EMPAT PERAN
+------------------
+1. Administrator Utama Sistem:
+   - seluruh menu;
+   - Manajemen Pengguna;
+   - Koordinat UPT;
+   - Audit Aktivitas;
+   - Pengaturan.
+
+2. Analis Pemberitaan Strategis:
+   - Input & Analisis;
+   - Pusat Telaah;
+   - Warning News;
+   - Peta, AI, data, dan laporan;
+   - tidak dapat mengelola akun/sistem.
+
+3. Operator Akuisisi Data Berita:
+   - Input Berita;
+   - melihat dan memperbaiki berita miliknya;
+   - tidak dapat mengubah analisis final;
+   - tidak dapat memverifikasi.
+
+4. Pimpinan Eksekutif:
+   - dashboard, Warning News, peta, AI, data terverifikasi, laporan;
+   - seluruh akses bersifat baca-saja.
+
+F. UJI ALUR BERITA
+------------------
+1. Login sebagai Operator Akuisisi Data Berita.
+2. Input satu berita biasa.
+3. Pastikan status menjadi Belum Ditelaah.
+4. Login sebagai Analis Pemberitaan Strategis.
+5. Buka Pusat Telaah.
+6. Verifikasi, minta koreksi, atau tandai Tidak Valid.
+7. Jika Perlu Koreksi, login kembali sebagai operator dan perbaiki berita.
+8. Setelah disimpan, berita kembali ke Belum Ditelaah.
+
+G. UJI WARNING NEWS
+-------------------
+1. Input berita dengan urgensi Tinggi atau Kritis.
+2. Sebelum diverifikasi, pastikan:
+   - Warning News menampilkan Peringatan Awal;
+   - dashboard menampilkan jumlah Peringatan Awal;
+   - marker peta tetap abu-abu dengan tanda seru merah tua.
+3. Verifikasi berita melalui Pusat Telaah.
+4. Pastikan:
+   - status berubah menjadi Peringatan Terverifikasi;
+   - marker berubah merah tua dan berdenyut sangat cepat.
+5. Jika berita ditandai Tidak Valid, warning harus hilang.
+
+H. UJI PETA
+-----------
+- Merah tua: Tinggi/Kritis terverifikasi, denyut sangat cepat.
+- Merah: Negatif terverifikasi, denyut cepat.
+- Abu-abu: Belum Ditelaah/Perlu Koreksi, denyut lambat.
+- Tanda seru merah tua: warning awal Tinggi/Kritis belum ditelaah.
+- Krem/beige: Netral terverifikasi.
+- Hijau: Positif terverifikasi.
+- Biru: Belum mempunyai berita.
+
+I. UPDATE ONLINE
+----------------
+Setelah lokal lulus pengujian:
+
+git add .
+git commit -m "Update SIMBERPAS V5.3 internal pusat dan early warning"
+git push
+
+Streamlit Cloud akan melakukan redeploy. Pastikan Secrets tetap tersedia pada App Settings.

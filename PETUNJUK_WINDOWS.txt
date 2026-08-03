@@ -1,0 +1,7 @@
+1. Ekstrak ZIP.
+2. Buka folder hasil ekstrak di File Explorer.
+3. Pertahankan .streamlit\secrets.toml dari proyek lama.
+4. Klik address bar folder, ketik cmd, lalu Enter.
+5. Jalankan: python -m pip install -r requirements.txt
+6. Jalankan: python -m streamlit run app.py
+7. Petunjuk lengkap: PETUNJUK_UPDATE_V5_2_FINAL.txt
