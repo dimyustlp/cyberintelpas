@@ -1,0 +1,57 @@
+name: Sinkronisasi Spreadsheet CyberIntelPAS
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cyberintelpas-sheet-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Panggil Edge Function sheet-sync
+        shell: bash
+        env:
+          SUPABASE_FUNCTION_URL: "https://ffcebfslmnhivravwhvm.supabase.co/functions/v1/sheet-sync"
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SHEET_SYNC_TOKEN: ${{ secrets.SHEET_SYNC_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          response_file="$(mktemp)"
+          http_code="$(
+            curl --silent --show-error \
+              --output "$response_file" \
+              --write-out "%{http_code}" \
+              --request POST \
+              --header "Content-Type: application/json" \
+              --header "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+              --header "apikey: ${SUPABASE_ANON_KEY}" \
+              --header "x-sync-token: ${SHEET_SYNC_TOKEN}" \
+              --header "x-trigger-type: github_actions" \
+              --data '{}' \
+              "${SUPABASE_FUNCTION_URL}"
+          )"
+
+          echo "HTTP status: ${http_code}"
+          cat "$response_file"
+          echo
+
+          if [[ "$http_code" -lt 200 || "$http_code" -ge 300 ]]; then
+            echo "Sinkronisasi gagal."
+            exit 1
+          fi
+
+          if ! grep -Eq '"ok"[[:space:]]*:[[:space:]]*true' "$response_file"; then
+            echo "Respons tidak menyatakan ok=true."
+            exit 1
+          fi
