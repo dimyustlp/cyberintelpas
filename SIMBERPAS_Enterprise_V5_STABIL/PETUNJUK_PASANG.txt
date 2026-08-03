@@ -1,0 +1,35 @@
+SIMBERPAS ENTERPRISE V5 STABIL — PETUNJUK SINGKAT
+
+A. PEMASANGAN
+1. Ekstrak folder SIMBERPAS_Enterprise_V5_STABIL ke:
+   C:\Users\user\Documents\FILE\
+2. Dari aplikasi lama, salin file:
+   .streamlit\secrets.toml
+3. Tempel ke folder baru:
+   SIMBERPAS_Enterprise_V5_STABIL\.streamlit\
+4. Jangan menyalin app.py atau file Python lain dari versi lama.
+5. Buka folder utama, klik address bar, ketik cmd, lalu Enter.
+6. Jalankan:
+   python -m pip install -r requirements.txt
+7. Jalankan:
+   python -m streamlit run app.py
+
+B. CARA TERMUDAH MENJALANKAN BERIKUTNYA
+Klik dua kali:
+JALANKAN_SIMBERPAS.bat
+
+C. MENU YANG TERSEDIA
+- Dashboard
+- Input & Analisis
+- Pusat Data Berita
+- Peta Indonesia
+- AI Assistant
+- Laporan
+- Manajemen Pengguna
+- Pengaturan
+
+D. CATATAN
+- Database Supabase lama tetap digunakan.
+- Jangan hapus secrets.toml.
+- Jangan mencampur file dari V4.1 dengan V5.
+- File utama adalah app.py.

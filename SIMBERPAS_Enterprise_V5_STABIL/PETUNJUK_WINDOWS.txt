@@ -1,0 +1,16 @@
+SIMBERPAS ENTERPRISE V4.1 — LANGKAH WINDOWS
+
+1. Ekstrak ZIP ke folder BARU.
+2. Salin .streamlit\secrets.toml dari proyek lama ke folder .streamlit proyek baru.
+3. Jalankan sql\migration_v4_enterprise.sql di Supabase SQL Editor.
+4. Buka folder proyek baru.
+5. Klik alamat folder di File Explorer, ketik cmd, lalu Enter.
+6. Jalankan:
+   python -m pip install -r requirements.txt
+7. Jalankan:
+   python -m streamlit run streamlit_app.py
+8. Buka http://localhost:8501
+9. Masuk memakai ACCESS_CODE lama.
+10. Buat akun bertingkat melalui menu Manajemen Pengguna.
+
+Jangan mengganti atau menghapus proyek lama sebelum versi baru selesai diuji.
