@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup
 from services.audit_service import log_action
 from services.classification import classify_rule_based
 from services.database import fetch_news_df, get_db, insert_row, table_exists, update_rows
+from services.access_control import normalize_role
 
 HTTP_HEADERS = {
     "User-Agent": (
@@ -39,7 +40,7 @@ STATUS_ALIASES = {
     "Ditolak": "Tidak Valid",
 }
 PENDING_STATUSES = {"Belum Ditelaah", "Perlu Koreksi", "Draft", "Diajukan", "Sedang Diperiksa", "Perlu Perbaikan"}
-REVIEWER_ROLES = {"super_admin", "news_analyst", "admin_pusat", "admin_kanwil"}
+REVIEWER_ROLES = {"super_admin", "media_intelligence_analyst"}
 ALLOWED_TRANSITIONS = {
     "Belum Ditelaah": {"Terverifikasi", "Perlu Koreksi", "Tidak Valid", "Diarsipkan"},
     "Perlu Koreksi": {"Belum Ditelaah", "Terverifikasi", "Tidak Valid", "Diarsipkan"},
@@ -331,22 +332,17 @@ def change_news_status(
     if new_status not in allowed:
         raise ValueError(f"Perubahan status {old_status} → {new_status} tidak diizinkan.")
 
-    normalized_role = {
-        "admin_pusat": "news_analyst",
-        "admin_kanwil": "news_analyst",
-        "operator_upt": "news_intake",
-        "viewer": "executive_viewer",
-    }.get(actor_role, actor_role)
+    normalized_role = normalize_role(actor_role)
     reviewer_action = new_status in {"Terverifikasi", "Perlu Koreksi", "Tidak Valid", "Diarsipkan"}
     restore_action = old_status in {"Tidak Valid", "Diarsipkan"} and new_status == "Belum Ditelaah"
     correction_resubmit = old_status == "Perlu Koreksi" and new_status == "Belum Ditelaah"
-    if (reviewer_action or restore_action) and normalized_role not in {"super_admin", "news_analyst"}:
-        raise PermissionError("Tindakan ini hanya dapat dilakukan oleh Analis Pemberitaan Strategis atau Administrator Utama Sistem.")
+    if (reviewer_action or restore_action) and normalized_role not in REVIEWER_ROLES:
+        raise PermissionError("Tindakan ini hanya dapat dilakukan oleh Analis Intelijen Pemberitaan atau Administrator Utama CYBER-INTELPAS.")
     if new_status == "Perlu Koreksi" and not clean_text(reason or note):
         raise ValueError("Catatan koreksi wajib diisi.")
     if new_status == "Tidak Valid" and not clean_text(reason or note):
         raise ValueError("Alasan tidak valid wajib diisi.")
-    if correction_resubmit and normalized_role not in {"super_admin", "news_analyst", "news_intake"}:
+    if correction_resubmit and normalized_role not in {"super_admin", "media_intelligence_analyst", "news_data_operator"}:
         raise PermissionError("Pengajuan ulang koreksi tidak diizinkan untuk peran ini.")
 
     now = datetime.now(timezone.utc).isoformat()

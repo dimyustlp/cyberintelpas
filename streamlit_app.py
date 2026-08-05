@@ -3,19 +3,21 @@ from __future__ import annotations
 import streamlit as st
 
 from components.layout import render_sidebar_profile
+from components.role_briefing import render_role_briefing
 from services.access_control import has_permission
 from services.auth_service import current_user, init_auth_state, render_login
+from services.v6_navigation import attach_v6_pages
 from styles.theme import inject_global_styles
 
 st.set_page_config(
-    page_title="SIMBERPAS — Pusat Intelijen Pemberitaan",
+    page_title="CYBER-INTELPAS — Pusat Intelijen Pemberitaan",
     page_icon="🏛️",
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
         "Get help": None,
         "Report a bug": None,
-        "About": "SIMBERPAS — Sistem Monitoring Berita Pemasyarakatan Internal Pusat",
+        "About": "CYBER-INTELPAS — Sistem Intelijen Pemberitaan Pemasyarakatan",
     },
 )
 
@@ -28,6 +30,7 @@ if user is None:
     st.stop()
 
 render_sidebar_profile(user)
+render_role_briefing(user)
 
 pages: dict[str, list[st.Page]] = {
     "Eksekutif": [
@@ -58,15 +61,17 @@ if has_permission(user, "review_news"):
     pages["Operasional"].append(
         st.Page("pages/pusat_telaah.py", title="Pusat Telaah", icon=":material/fact_check:")
     )
+    pages["Operasional"].append(
+        st.Page("pages/pemetaan_upt.py", title="Pemetaan UPT", icon=":material/account_tree:")
+    )
 if has_permission(user, "view_data"):
     pages["Operasional"].append(
         st.Page("pages/data_berita.py", title="Pusat Data Berita", icon=":material/database:")
     )
 if has_permission(user, "export_reports"):
     pages["Operasional"].append(
-        st.Page("pages/laporan.py", title="Laporan", icon=":material/description:")
+        st.Page("pages/laporan.py", title="Laporan Operasional", icon=":material/description:")
     )
-
 if not pages["Operasional"]:
     del pages["Operasional"]
 
@@ -94,4 +99,5 @@ if has_permission(user, "manage_settings"):
 if admin_pages:
     pages["Administrasi Sistem"] = admin_pages
 
+pages = attach_v6_pages(pages, user)
 st.navigation(pages, position="sidebar", expanded=True).run()

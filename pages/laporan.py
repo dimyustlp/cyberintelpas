@@ -26,7 +26,7 @@ if not news.empty:
     news = news.copy()
     news["status_verifikasi"] = news["status_verifikasi"].map(normalize_status)
     news["warning_state"] = news.apply(warning_state, axis=1)
-    if user.role == "executive_viewer":
+    if user.role == "executive_decision_maker":
         news = news[news["status_verifikasi"].eq("Terverifikasi") | news["warning_state"].eq("preliminary")].copy()
 if news.empty:
     st.info("Belum ada data untuk dilaporkan.")

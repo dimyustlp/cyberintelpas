@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from components.layout import page_header, section_header
-from services.access_control import ROLE_LABELS, require_permission, role_label
+from services.access_control import ROLE_LABELS, normalize_role, require_permission, role_label
 from services.audit_service import log_action
 from services.auth_service import (
     archive_user,
@@ -14,7 +14,7 @@ from services.auth_service import (
     set_user_active,
     update_user_profile,
 )
-from services.database import fetch_all, table_exists
+from services.database import fetch_all, fetch_upt_df, table_exists
 
 admin = require_permission("manage_users")
 page_header(
@@ -27,28 +27,36 @@ if not table_exists("app_users"):
     st.error("Tabel app_users belum tersedia. Jalankan migration SQL terbaru pada Supabase SQL Editor.")
     st.stop()
 
-with st.expander("Empat peran resmi SIMBERPAS", expanded=True):
+with st.expander("Enam peran resmi CYBER-INTELPAS", expanded=True):
     st.markdown(
         """
-        - **Administrator Utama Sistem:** seluruh sistem, pengguna, konfigurasi, koordinat, audit, input, analisis, dan verifikasi.
-        - **Analis Pemberitaan Strategis:** input, analisis, koreksi, telaah, verifikasi, Warning News, peta, dan laporan.
-        - **Operator Akuisisi Data Berita:** input sumber dan bukti, memperbaiki data yang dikembalikan, tanpa kewenangan analisis/verifikasi.
-        - **Pimpinan Eksekutif:** dashboard, Warning News, peta, AI Assistant, data terverifikasi, dan laporan secara baca-saja.
+        - **Pimpinan Pengambil Keputusan:** briefing, tren, kasus, laporan, keputusan, dan pemantauan tindak lanjut.
+        - **Analis Intelijen Pemberitaan:** input, analisis, telaah, verifikasi, pemetaan UPT, tren, dan pengelolaan kasus.
+        - **Operator Akuisisi dan Validasi Data:** input, validasi metadata, sinkronisasi, dan koreksi berita miliknya.
+        - **Petugas Verifikasi Lapangan:** penugasan, laporan lapangan, bukti, dan pembaruan tindak lanjut.
+        - **Analis Evaluasi dan Rekomendasi:** evaluasi fakta, akar masalah, rekomendasi, laporan, dan tindak lanjut.
+        - **Administrator Utama CYBER-INTELPAS:** seluruh sistem, pengguna, integrasi, audit, konfigurasi, dan kesehatan layanan.
         """
     )
 
-section_header("Tambah Pengguna", "Buat akun baru sesuai fungsi kerja internal pusat.")
+upt_master = fetch_upt_df()
+kanwil_options = [""] + sorted(upt_master.get("kanwil", pd.Series(dtype=str)).dropna().astype(str).loc[lambda x: x.str.strip().ne("")].unique().tolist())
+upt_options = [""] + sorted(upt_master.get("nama_upt", pd.Series(dtype=str)).dropna().astype(str).loc[lambda x: x.str.strip().ne("")].unique().tolist())
+
+section_header("Tambah Pengguna", "Buat akun baru sesuai fungsi kerja dan cakupan datanya.")
 with st.form("create_user_form"):
     c1, c2 = st.columns(2)
     username = c1.text_input("Nama pengguna")
     full_name = c2.text_input("Nama lengkap")
     role = c1.selectbox("Peran", list(ROLE_LABELS), format_func=lambda x: ROLE_LABELS[x])
     password = c2.text_input("Kata sandi awal", type="password")
+    assigned_kanwil = c1.selectbox("Cakupan Kantor Wilayah (opsional)", kanwil_options, format_func=lambda x: x or "Seluruh Kantor Wilayah")
+    assigned_upt = c2.selectbox("Cakupan UPT (opsional)", upt_options, format_func=lambda x: x or "Seluruh UPT")
     submitted = st.form_submit_button("BUAT PENGGUNA", type="primary", use_container_width=True)
 
 if submitted:
     try:
-        new_id = create_user(username, password, full_name, role)
+        new_id = create_user(username, password, full_name, role, assigned_kanwil, assigned_upt)
         log_action(
             "create", "app_users", new_id, admin.username, admin.role,
             {"username": username.strip().casefold(), "role": role},
@@ -63,7 +71,7 @@ show_archived = st.checkbox("Tampilkan akun yang sudah diarsipkan", value=False)
 users = pd.DataFrame(
     fetch_all(
         "app_users",
-        "id,username,full_name,role,aktif,last_login,created_at,updated_at,deleted_at,deleted_by,password_changed_at",
+        "id,username,full_name,role,assigned_kanwil,assigned_upt,aktif,last_login,created_at,updated_at,deleted_at,deleted_by,password_changed_at",
         order_by="created_at",
         desc=True,
     )
@@ -108,10 +116,13 @@ if is_archived:
     st.stop()
 
 with st.expander("Ubah Profil dan Peran", expanded=True):
-    current_role = str(row.get("role") or "executive_viewer")
+    current_role = normalize_role(str(row.get("role") or "executive_decision_maker"))
     if current_role not in ROLE_LABELS:
-        legacy_map = {"admin_pusat": "news_analyst", "admin_kanwil": "news_analyst", "operator_upt": "news_intake", "viewer": "executive_viewer"}
-        current_role = legacy_map.get(current_role, "executive_viewer")
+        current_role = "executive_decision_maker"
+    current_kanwil = str(row.get("assigned_kanwil") or "")
+    current_upt = str(row.get("assigned_upt") or "")
+    edit_kanwil_options = kanwil_options if current_kanwil in kanwil_options else kanwil_options + [current_kanwil]
+    edit_upt_options = upt_options if current_upt in upt_options else upt_options + [current_upt]
     with st.form(f"edit_user_{user_id}"):
         e1, e2 = st.columns(2)
         new_full_name = e1.text_input("Nama lengkap", value=str(row.get("full_name") or ""))
@@ -122,10 +133,22 @@ with st.expander("Ubah Profil dan Peran", expanded=True):
             format_func=lambda x: ROLE_LABELS[x],
             disabled=is_self and current_role == "super_admin",
         )
+        new_kanwil = e1.selectbox(
+            "Cakupan Kantor Wilayah (opsional)",
+            edit_kanwil_options,
+            index=edit_kanwil_options.index(current_kanwil),
+            format_func=lambda x: x or "Seluruh Kantor Wilayah",
+        )
+        new_upt = e2.selectbox(
+            "Cakupan UPT (opsional)",
+            edit_upt_options,
+            index=edit_upt_options.index(current_upt),
+            format_func=lambda x: x or "Seluruh UPT",
+        )
         save_profile = st.form_submit_button("SIMPAN PERUBAHAN", type="primary", use_container_width=True)
     if save_profile:
         try:
-            update_user_profile(user_id, new_full_name, new_role)
+            update_user_profile(user_id, new_full_name, new_role, new_kanwil, new_upt)
             log_action("update_profile", "app_users", user_id, admin.username, admin.role, {"role": new_role})
             st.success("Profil pengguna diperbarui.")
             st.rerun()

@@ -29,9 +29,11 @@ def current_user() -> UserContext | None:
             username=value.username,
             full_name=value.full_name,
             role=normalized,
-            assigned_kanwil="",
-            assigned_upt="",
-            legacy=value.legacy,
+            assigned_kanwil=getattr(value, "assigned_kanwil", ""),
+            assigned_upt=getattr(value, "assigned_upt", ""),
+            legacy=getattr(value, "legacy", False),
+            source=getattr(value, "source", "database"),
+            aktif=getattr(value, "aktif", True),
         )
     if isinstance(value, dict):
         allowed = {
@@ -208,8 +210,8 @@ def create_user(
         "password_hash": _hash_password(password),
         "full_name": full_name.strip() or clean_username,
         "role": role,
-        "assigned_kanwil": None,
-        "assigned_upt": None,
+        "assigned_kanwil": assigned_kanwil.strip() or None,
+        "assigned_upt": assigned_upt.strip() or None,
         "aktif": True,
         "deleted_at": None,
         "deleted_by": None,
@@ -235,8 +237,8 @@ def update_user_profile(
     payload = {
         "full_name": full_name.strip(),
         "role": role,
-        "assigned_kanwil": None,
-        "assigned_upt": None,
+        "assigned_kanwil": assigned_kanwil.strip() or None,
+        "assigned_upt": assigned_upt.strip() or None,
     }
     db.table("app_users").update(payload).eq("id", user_id).execute()
     clear_data_cache()

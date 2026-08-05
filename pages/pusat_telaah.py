@@ -124,6 +124,31 @@ with right:
         st.link_button("Buka sumber asli", str(row.get("link")), use_container_width=True)
 
 section_header("Koreksi Analisis", "Simpan perubahan sebelum menetapkan hasil telaah.")
+
+# Daftar UPT aktif dipakai langsung pada formulir telaah agar analis tidak perlu
+# berpindah ke halaman Pemetaan UPT hanya untuk memperbaiki satu berita.
+_unknown_upt_labels = {"", "tidak diketahui", "belum teridentifikasi", "none", "nan", "-"}
+_active_upt = upt_df.copy()
+if "aktif" in _active_upt.columns:
+    _active_upt = _active_upt[_active_upt["aktif"].fillna(True)]
+_master_upt_names = sorted(
+    {
+        str(name).strip()
+        for name in _active_upt.get("nama_upt", pd.Series(dtype=str)).dropna().tolist()
+        if str(name).strip() and str(name).strip().casefold() not in _unknown_upt_labels
+    }
+)
+_current_upt = str(row.get("nama_upt") or "").strip()
+_upt_options = ["Belum Teridentifikasi", *_master_upt_names]
+if _current_upt and _current_upt.casefold() not in _unknown_upt_labels and _current_upt not in _upt_options:
+    # Data lama atau UPT yang belum masuk master tetap dapat dipertahankan.
+    _upt_options.insert(1, _current_upt)
+_current_upt_option = (
+    _current_upt
+    if _current_upt in _upt_options and _current_upt.casefold() not in _unknown_upt_labels
+    else "Belum Teridentifikasi"
+)
+
 with st.form(f"analysis_edit_{news_id}"):
     e1, e2 = st.columns(2)
     title = e1.text_input("Judul", value=str(row.get("judul") or ""))
@@ -144,6 +169,18 @@ with st.form(f"analysis_edit_{news_id}"):
         urgency_options,
         index=urgency_options.index(current_urgency) if current_urgency in urgency_options else 0,
     )
+    selected_upt = e1.selectbox(
+        "Lokasi UPT",
+        _upt_options,
+        index=_upt_options.index(_current_upt_option),
+        help="Ketik sebagian nama UPT untuk mempercepat pencarian pada daftar.",
+    )
+    manual_upt = e2.text_input(
+        "Nama UPT manual (opsional)",
+        value="",
+        placeholder="Isi hanya bila UPT belum tersedia pada daftar master",
+        help="Nilai manual akan dipakai sebagai pengganti pilihan Lokasi UPT.",
+    )
     impact_options = ["UPT", "Kanwil", "Nasional", "Lintas Instansi", "Perhatian Publik Luas"]
     current_impact = str(row.get("dampak") or "UPT")
     impact = e1.selectbox(
@@ -157,6 +194,7 @@ with st.form(f"analysis_edit_{news_id}"):
     save_edit = st.form_submit_button("SIMPAN KOREKSI ANALISIS", type="primary", use_container_width=True)
 
 if save_edit:
+    resolved_upt = manual_upt.strip() or selected_upt
     try:
         update_news(
             news_id,
@@ -167,6 +205,7 @@ if save_edit:
                 "subkategori": subcategory,
                 "sentimen": sentiment,
                 "urgensi": urgency,
+                "nama_upt": resolved_upt,
                 "dampak": impact,
                 "lokasi": location,
                 "ringkasan": summary,

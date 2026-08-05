@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib.util
 import sys
 import types
 from pathlib import Path
@@ -10,41 +9,31 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 
-def _cache_decorator(*decorator_args, **decorator_kwargs):
-    def decorate(func):
-        func.clear = lambda: None
-        return func
-    if decorator_args and callable(decorator_args[0]) and len(decorator_args) == 1 and not decorator_kwargs:
-        return decorate(decorator_args[0])
-    return decorate
-
-
-if importlib.util.find_spec("streamlit") is None:
-    st = types.ModuleType("streamlit")
-    st.cache_data = _cache_decorator
-    st.cache_resource = _cache_decorator
-    st.error = lambda *args, **kwargs: None
-    st.stop = lambda *args, **kwargs: None
-    st.secrets = {}
-    st.session_state = {}
-    sys.modules["streamlit"] = st
-
+# Lingkungan CI ringan mungkin belum memasang Streamlit. Stub ini hanya aktif
+# untuk pengujian unit dan tidak dipakai ketika Streamlit asli tersedia.
 try:
-    import supabase as _supabase_check
-    _supabase_available = hasattr(_supabase_check, "Client") and hasattr(_supabase_check, "create_client")
-except Exception:
-    _supabase_available = False
+    import streamlit  # noqa: F401
+except ModuleNotFoundError:
+    streamlit_stub = types.ModuleType("streamlit")
 
-if not _supabase_available:
-    supabase = types.ModuleType("supabase")
-    supabase.Client = object
-    supabase.create_client = lambda *args, **kwargs: None
-    supabase_client = types.ModuleType("supabase.client")
+    class _SessionState(dict):
+        pass
 
-    class ClientOptions:
-        def __init__(self, **kwargs):
-            self.kwargs = kwargs
+    def _cache_decorator(func=None, **_kwargs):
+        def decorate(target):
+            target.clear = lambda: None
+            return target
+        return decorate(func) if callable(func) else decorate
 
-    supabase_client.ClientOptions = ClientOptions
-    sys.modules["supabase"] = supabase
-    sys.modules["supabase.client"] = supabase_client
+    streamlit_stub.cache_resource = _cache_decorator
+    streamlit_stub.cache_data = _cache_decorator
+    streamlit_stub.session_state = _SessionState()
+    streamlit_stub.secrets = {}
+    streamlit_stub.error = lambda *args, **kwargs: None
+    streamlit_stub.warning = lambda *args, **kwargs: None
+    streamlit_stub.info = lambda *args, **kwargs: None
+    streamlit_stub.success = lambda *args, **kwargs: None
+    streamlit_stub.caption = lambda *args, **kwargs: None
+    streamlit_stub.stop = lambda *args, **kwargs: None
+    streamlit_stub.rerun = lambda *args, **kwargs: None
+    sys.modules["streamlit"] = streamlit_stub

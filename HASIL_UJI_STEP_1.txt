@@ -1,0 +1,19 @@
+CYBER-INTELPAS V6.0.1 — HASIL UJI STEP 1
+Tanggal: 5 Agustus 2026
+
+Kompilasi Python : LULUS
+Entry point identik : YA
+Unit dan regression test : 42 LULUS, 0 GAGAL
+
+Ruang lingkup pengujian:
+- Alias peran lama dan enam peran V6
+- Permission lama dan permission V6
+- Urutan UserContext versi lama
+- Pembatasan berita Operator
+- Hak edit dan verifikasi berita
+- Menu V6 tiap peran
+- Workflow status berita
+- Sinkronisasi Spreadsheet
+- Tren mingguan
+- Ekspor Excel dan timezone
+- Peta dan jumlah berita

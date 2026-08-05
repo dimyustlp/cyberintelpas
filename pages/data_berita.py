@@ -31,7 +31,7 @@ news["status_verifikasi"] = news["status_verifikasi"].map(normalize_status)
 news["warning_state"] = news.apply(warning_state, axis=1)
 
 # Pimpinan melihat hasil terverifikasi dan peringatan awal tinggi/kritis, bukan seluruh antrean kerja biasa.
-if user.role == "executive_viewer":
+if user.role == "executive_decision_maker":
     news = news[
         news["status_verifikasi"].eq("Terverifikasi")
         | news["warning_state"].eq("preliminary")

@@ -5,8 +5,14 @@ from typing import Any
 
 import pandas as pd
 import streamlit as st
-from supabase import Client, create_client
-from supabase.client import ClientOptions
+
+try:
+    from supabase import Client, create_client
+    from supabase.client import ClientOptions
+except (ImportError, ModuleNotFoundError):
+    Client = Any  # type: ignore[misc,assignment]
+    create_client = None  # type: ignore[assignment]
+    ClientOptions = None  # type: ignore[assignment]
 
 from services.config import get_config
 
@@ -16,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 @st.cache_resource
 def get_db() -> Client | None:
     cfg = get_config()
-    if not cfg.has_supabase:
+    if not cfg.has_supabase or create_client is None or ClientOptions is None:
         return None
     return create_client(
         cfg.supabase_url,

@@ -1,0 +1,35 @@
+CYBER-INTELPAS V6.0 — HASIL PENGUJIAN PAKET
+============================================
+Tanggal build: 4 Agustus 2026
+
+1. Kompilasi seluruh file Python
+   Hasil: LULUS
+
+2. Unit test
+   Hasil: 7 lulus, 0 gagal
+
+3. Aturan link unik
+   - parameter pelacakan dibuang
+   - link identik dihitung sekali
+   - link berbeda pada isu sama tetap dihitung sebagai publikasi berbeda
+   Hasil: LULUS
+
+4. Pemetaan UPT
+   - berita Belum Teridentifikasi tetap dihitung sebagai publikasi negatif
+   - tidak dimasukkan ke peringkat UPT sebelum dipetakan
+   Hasil: LULUS
+
+5. Peran dan izin
+   - alias V5 dan V4 dikenali
+   - izin Pimpinan, Petugas Lapangan, dan Administrator terpisah
+   Hasil: LULUS
+
+6. Patch otomatis app.py
+   - import ditambahkan
+   - briefing dipasang setelah login
+   - navigasi V6 dipasang sebelum st.navigation
+   - backup entrypoint dibuat
+   Hasil: LULUS
+
+7. Pengujian integrasi nyata
+   Supabase, Storage, Streamlit, OpenAI, dan GitHub Actions belum dijalankan pada proyek produksi dari lingkungan build ini. Uji penerimaan harus dilakukan setelah paket dipasang pada proyek pengguna.
