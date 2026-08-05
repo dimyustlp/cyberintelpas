@@ -42,7 +42,6 @@ jobs:
             --write-out $'\n%{http_code}' \
             --request POST \
             "$FUNCTION_URL" \
-            --header "Authorization: Bearer $SYNC_TOKEN" \
             --header "x-sync-token: $SYNC_TOKEN" \
             --header "Content-Type: application/json" \
             --data '{"trigger_type":"github_actions"}')
