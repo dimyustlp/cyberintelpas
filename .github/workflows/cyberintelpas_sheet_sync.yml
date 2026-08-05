@@ -1,57 +1,76 @@
 name: Sinkronisasi Spreadsheet CyberIntelPAS
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
   workflow_dispatch:
-
-permissions:
-  contents: read
-
-concurrency:
-  group: cyberintelpas-sheet-sync
-  cancel-in-progress: false
+  schedule:
+    - cron: "0 * * * *"
 
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
 
     steps:
-      - name: Panggil Edge Function sheet-sync
+      - name: Validasi GitHub Secrets
         shell: bash
         env:
-          SUPABASE_FUNCTION_URL: "https://ffcebfslmnhivravwhvm.supabase.co/functions/v1/sheet-sync"
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          SHEET_SYNC_TOKEN: ${{ secrets.SHEET_SYNC_TOKEN }}
+          FUNCTION_URL: ${{ secrets.SHEET_SYNC_FUNCTION_URL }}
+          SYNC_TOKEN: ${{ secrets.SHEET_SYNC_TOKEN }}
         run: |
-          set -euo pipefail
-
-          response_file="$(mktemp)"
-          http_code="$(
-            curl --silent --show-error \
-              --output "$response_file" \
-              --write-out "%{http_code}" \
-              --request POST \
-              --header "Content-Type: application/json" \
-              --header "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
-              --header "apikey: ${SUPABASE_ANON_KEY}" \
-              --header "x-sync-token: ${SHEET_SYNC_TOKEN}" \
-              --header "x-trigger-type: github_actions" \
-              --data '{}' \
-              "${SUPABASE_FUNCTION_URL}"
-          )"
-
-          echo "HTTP status: ${http_code}"
-          cat "$response_file"
-          echo
-
-          if [[ "$http_code" -lt 200 || "$http_code" -ge 300 ]]; then
-            echo "Sinkronisasi gagal."
+          if [ -z "$FUNCTION_URL" ]; then
+            echo "::error::SHEET_SYNC_FUNCTION_URL belum diisi."
             exit 1
           fi
 
-          if ! grep -Eq '"ok"[[:space:]]*:[[:space:]]*true' "$response_file"; then
-            echo "Respons tidak menyatakan ok=true."
+          if [ -z "$SYNC_TOKEN" ]; then
+            echo "::error::SHEET_SYNC_TOKEN belum diisi."
             exit 1
           fi
+
+          echo "GitHub Secrets tersedia."
+
+      - name: Jalankan sinkronisasi spreadsheet
+        shell: bash
+        env:
+          FUNCTION_URL: ${{ secrets.SHEET_SYNC_FUNCTION_URL }}
+          SYNC_TOKEN: ${{ secrets.SHEET_SYNC_TOKEN }}
+        run: |
+          set +e
+
+          RESPONSE=$(curl --silent --show-error \
+            --connect-timeout 30 \
+            --max-time 300 \
+            --write-out $'\n%{http_code}' \
+            --request POST \
+            "$FUNCTION_URL" \
+            --header "Authorization: Bearer $SYNC_TOKEN" \
+            --header "x-sync-token: $SYNC_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data '{"trigger_type":"github_actions"}')
+
+          CURL_EXIT=$?
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "======================================"
+          echo "HTTP status: $HTTP_CODE"
+          echo "Respons Edge Function:"
+          echo "$BODY"
+          echo "======================================"
+
+          if [ "$CURL_EXIT" -ne 0 ]; then
+            echo "::error::Curl gagal dengan exit code $CURL_EXIT."
+            exit 1
+          fi
+
+          if ! [[ "$HTTP_CODE" =~ ^[0-9]{3}$ ]]; then
+            echo "::error::HTTP status tidak valid: $HTTP_CODE"
+            exit 1
+          fi
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "Sinkronisasi diterima oleh Edge Function."
+            exit 0
+          fi
+
+          echo "::error::Edge Function mengembalikan HTTP $HTTP_CODE."
+          exit 1
