@@ -1,26 +1,10 @@
 from __future__ import annotations
 
-import base64
 import io
 from datetime import datetime
 import pandas as pd
-import qrcode
 from jinja2 import Template
 from weasyprint import HTML
-
-
-def generate_qr_code_base64(url: str) -> str:
-    """Membuat QR Code dari URL berita dan mengembalikan string Base64 untuk disisipkan ke HTML."""
-    if not url:
-        return ""
-    qr = qrcode.QRCode(version=1, box_size=4, border=2)
-    qr.add_data(url)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-
-    buffered = io.BytesIO()
-    img.save(buffered, format="PNG")
-    return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
 
 HTML_TEMPLATE = """
@@ -132,24 +116,12 @@ HTML_TEMPLATE = """
     <div class="kliping-card">
         <div class="kliping-title">{{ item.judul }}</div>
         <div class="kliping-meta">
-            <b>Media:</b> {{ item.media }} | <b>UPT:</b> {{ item.nama_upt }} | <b>Terbit:</b> {{ item.tanggal_publikasi }}
+            <b>Media:</b> {{ item.media }} | <b>UPT:</b> {{ item.nama_upt }} | <b>Terbit:</b> {{ item.tanggal_publikasi }} | <b>Link:</b> <a href="{{ item.link }}" style="color:#2b6cb0;">{{ item.link }}</a>
         </div>
-        <table width="100%" style="border-collapse:collapse;">
-            <tr>
-                <td style="border:none; padding:0; vertical-align:top;" width="78%">
-                    <div class="kliping-summary">
-                        <b>Ringkasan Eksekutif AI (Kronologi & Bukti):</b><br>
-                        <p style="white-space: pre-line; margin-top: 5px;">{{ item.ringkasan }}</p>
-                    </div>
-                </td>
-                <td style="border:none; padding:0; text-align:center; vertical-align:top;" width="22%">
-                    {% if item.qr_code_base64 %}
-                    <img src="data:image/png;base64,{{ item.qr_code_base64 }}" width="95"><br>
-                    <span style="font-size:7pt; color:#718096;">Scan Tautan Berita</span>
-                    {% endif %}
-                </td>
-            </tr>
-        </table>
+        <div class="kliping-summary">
+            <b>Ringkasan Eksekutif AI (Kronologi & Bukti):</b><br>
+            <p style="white-space: pre-line; margin-top: 5px;">{{ item.ringkasan }}</p>
+        </div>
     </div>
     {% endfor %}
     {% endif %}
@@ -160,7 +132,7 @@ HTML_TEMPLATE = """
 
 
 def create_daily_pdf_bytes(df_news: pd.DataFrame, periode_label: str) -> bytes:
-    """Mengolah DataFrame berita dan merender PDF menjadi format bytes."""
+    """Mengolah DataFrame berita dan merender PDF menjadi format bytes tanpa qrcode."""
     total = len(df_news)
     positif = len(df_news[df_news["sentimen"] == "Positif"]) if total > 0 else 0
     negatif = len(df_news[df_news["sentimen"] == "Negatif"]) if total > 0 else 0
@@ -168,25 +140,21 @@ def create_daily_pdf_bytes(df_news: pd.DataFrame, periode_label: str) -> bytes:
     pct_pos = round((positif / total * 100), 2) if total > 0 else 0
     pct_neg = round((negatif / total * 100), 2) if total > 0 else 0
 
-    # Sebaran isu negatif per UPT
     df_neg = df_news[df_news["sentimen"] == "Negatif"] if total > 0 else pd.DataFrame()
     sebaran_neg = []
     if not df_neg.empty:
         grouped = df_neg.groupby(["nama_upt"]).size().reset_index(name="jumlah")
         for _, row in grouped.iterrows():
             sebaran_neg.append({
-                "kanwil": "Wilayah Terdampak",  # Dapat disesuaikan dengan mapping relasi Kanwil Anda
+                "kanwil": "Wilayah Terdampak",
                 "upt": row["nama_upt"],
                 "jumlah": row["jumlah"],
             })
 
-    # Siapkan kliping negatif + QR code
     berita_negatif_list = []
     if not df_neg.empty:
         for _, row in df_neg.iterrows():
-            item = row.to_dict()
-            item["qr_code_base64"] = generate_qr_code_base64(str(row.get("link", "")))
-            berita_negatif_list.append(item)
+            berita_negatif_list.append(row.to_dict())
 
     template = Template(HTML_TEMPLATE)
     html_out = template.render(
