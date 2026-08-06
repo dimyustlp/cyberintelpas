@@ -15,13 +15,14 @@ from services.news_service import (
     save_news,
 )
 
+# --- 1. VERIFIKASI HAK AKSES & INISIALISASI ---
 user = require_permission("create_news")
 can_analyze = has_permission(user, "analyze_news")
 
 page_header(
-    "Input & Analisis Berita" if can_analyze else "Input Berita",
+    "Input & Analisis Berita (Hybrid System)" if can_analyze else "Input Berita",
     (
-        "Masukkan tautan, koreksi hasil analisis, deteksi duplikat, lalu kirim ke Pusat Telaah."
+        "Masukkan tautan, koreksi hasil analisis AI/Bot, deteksi duplikat real-time, lalu kirim ke Pusat Telaah."
         if can_analyze
         else "Masukkan sumber berita dan bukti pendukung. Analisis otomatis dicatat untuk ditelaah oleh Analis Pemberitaan Strategis."
     ),
@@ -36,56 +37,87 @@ if not upt_names:
     st.stop()
 
 st.session_state.setdefault("analysis_result", None)
+st.session_state.setdefault("duplicate_info", None)
 
-with st.expander("Alur kerja internal pusat", expanded=False):
+# --- 2. PENJELASAN ALUR KERJA HYBRID ---
+with st.expander("ℹ️ Alur Kerja Hybrid & Anti-Duplikasi Cyber-Intelpas", expanded=False):
     st.markdown(
         """
-        **Input manual/otomatis → Belum Ditelaah → Telaah analis → Terverifikasi / Perlu Koreksi / Tidak Valid.**
-
-        Berita dengan urgensi **Tinggi/Kritis** langsung memunculkan **Peringatan Awal — Belum Ditelaah**.
-        Peringatan tersebut baru menjadi peringatan resmi setelah diverifikasi analis.
+        **Input Manual/Bot Otomatis → Belum Ditelaah → Telaah Analis → Terverifikasi / Perlu Koreksi / Tidak Valid.**
+        
+        * **Anti-Duplikasi Lapis 1 (Normalisasi):** Tautan berita otomatis dibersihkan dari parameter pelacak iklan (`?utm_source=...`).
+        * **Anti-Duplikasi Lapis 2 (Live Warning):** Jika berita sudah pernah ditarik oleh Bot Scraper atau petugas lain, sistem langsung memberi peringatan kuning.
+        * **Smart Upsert Lapis 3:** Input manual dari manusia memiliki prioritas lebih tinggi untuk melengkapi/memperbarui data hasil tarikan bot otomatis.
         """
     )
 
+# --- 3. TAHAP 1: FORM PENGAMBILAN & ANALISIS SUMBER ---
 with st.form("process_news"):
     c1, c2 = st.columns(2)
     nama_upt = c1.selectbox("Nama UPT", upt_names, index=None, placeholder="Pilih UPT")
     nama_petugas = c2.text_input("Nama penginput", value=user.full_name or user.username, disabled=True)
-    link = st.text_input("Link berita", placeholder="https://...")
+    link = st.text_input("Link berita *", placeholder="https://...")
     manual_text = st.text_area(
         "Caption, transkrip, atau keterangan sumber",
         placeholder="Tempel teks unggahan media sosial atau informasi penting dari sumber.",
         height=130,
     )
-    process = st.form_submit_button("PROSES SUMBER", type="primary", use_container_width=True)
+    process = st.form_submit_button("🔍 PROSES SUMBER & CEK DUPLIKASI", type="primary", use_container_width=True)
 
 if process:
+    # Lapis 1: Normalisasi URL
     url = normalize_url(link)
     if not nama_upt or not url:
         st.warning("Nama UPT dan link berita wajib diisi.")
     else:
-        with st.spinner("Membaca sumber dan menjalankan klasifikasi awal..."):
+        with st.spinner("Membaca sumber, mendeteksi duplikasi, dan menjalankan klasifikasi awal..."):
             result = analyze_news(url, manual_text)
-        st.session_state.analysis_result = {
-            **result,
-            "nama_upt": nama_upt,
-            "nama_petugas": clean_text(nama_petugas),
-            "link": url,
-            "caption_manual": clean_text(manual_text),
-        }
+            
+            # Cek Duplikasi Real-time terhadap database eksisting (Lapis 2)
+            visible_news = scope_news(fetch_news_df(), user, all_upt)
+            existing_dups = find_duplicate_news(
+                url, 
+                str(result.get("judul", "")), 
+                str(result.get("media", "")), 
+                nama_upt, 
+                "", 
+                visible_news
+            )
+            
+            st.session_state.duplicate_info = existing_dups if not existing_dups.empty else None
+            st.session_state.analysis_result = {
+                **result,
+                "nama_upt": nama_upt,
+                "nama_petugas": clean_text(nama_petugas),
+                "link": url,
+                "caption_manual": clean_text(manual_text),
+            }
 
 result = st.session_state.analysis_result
 if not result:
-    st.info("Masukkan tautan berita untuk memulai.")
+    st.info("💡 Masukkan tautan berita di atas lalu klik 'PROSES SUMBER & CEK DUPLIKASI' untuk memulai.")
     st.stop()
+
+# --- 4. ANTI-DUPLIKASI LAPIS 2: LIVE WARNING ALERT ---
+existing_dups = st.session_state.duplicate_info
+if existing_dups is not None and not existing_dups.empty:
+    first_dup = existing_dups.iloc[0]
+    st.warning(
+        f"⚠️ **LINK/BERITA SERUPA SUDAH TERDATA DI SISTEM! (Anti-Duplikasi Lapis 2)**\n\n"
+        f"• **Judul Terdaftar:** {first_dup.get('judul', '-')}\n"
+        f"• **Media:** {first_dup.get('media', '-')} | **UPT:** {first_dup.get('nama_upt', '-')}\n"
+        f"• **Status:** {first_dup.get('status_verifikasi', '-')}\n\n"
+        f"💡 *Catatan Smart Upsert (Lapis 3): Anda tetap bisa menyimpan data di bawah sebagai **koreksi/perkembangan baru** atau **sumber tambahan** tanpa membuat duplikat sampah.*"
+    )
 
 urgency_auto = str(result.get("urgensi", "Rendah"))
 if urgency_auto in {"Tinggi", "Kritis"}:
     st.error(
-        f"⚠️ PERINGATAN AWAL — sistem mendeteksi urgensi {urgency_auto}. "
+        f"⚠️ **PERINGATAN AWAL** — sistem mendeteksi urgensi **{urgency_auto}**. "
         "Berita akan langsung tampil pada Warning News dengan label Belum Ditelaah setelah disimpan."
     )
 
+# --- 5. TAHAP 2: FORM DETAIL & SMART UPSERT ---
 section_header(
     "Data yang Akan Disimpan",
     "Analis dapat mengoreksi klasifikasi. Operator Akuisisi hanya mengelola data sumber dan tidak menetapkan analisis final.",
@@ -105,6 +137,7 @@ with st.form("save_news_form", clear_on_submit=False):
         )
         published = st.text_input("Tanggal publikasi", value=str(result.get("tanggal_publikasi", "")))
         location = st.text_input("Lokasi kejadian", value=str(result.get("lokasi", "")))
+    
     with b:
         if can_analyze:
             categories = [
@@ -148,26 +181,31 @@ with st.form("save_news_form", clear_on_submit=False):
 
     summary_default = str(result.get("ringkasan", ""))
     if can_analyze:
-        summary = st.text_area("Ringkasan analisis", value=summary_default, height=150)
+        summary = st.text_area("Ringkasan analisis (Wajib untuk Isu Negatif)", value=summary_default, height=150)
         keywords = st.text_input("Kata kunci", value=", ".join(result.get("kata_kunci", []) or []))
     else:
         st.text_area("Ringkasan otomatis", value=summary_default, height=130, disabled=True)
         summary = summary_default
         keywords = ", ".join(result.get("kata_kunci", []) or [])
 
-    notes = st.text_area("Catatan penginput", height=80)
+    notes = st.text_area("Catatan penginput / Koreksi atas Bot", height=80)
     files = st.file_uploader(
         "Bukti pendukung (opsional)",
         type=["jpg", "jpeg", "png", "pdf"],
         accept_multiple_files=True,
         help="Maksimal 5 file, masing-masing maksimal 10 MB.",
     )
+    
+    # Pilihan penanganan duplikasi (Smart Upsert Logic)
+    default_dup_idx = 1 if (existing_dups is not None and not existing_dups.empty) else 0
     duplicate_action = st.radio(
-        "Jika terdeteksi berita serupa",
+        "Tindakan jika terdeteksi berita serupa (Smart Upsert Lapis 3):",
         ["Batalkan jika duplikat", "Simpan sebagai sumber tambahan", "Simpan sebagai perkembangan baru"],
+        index=default_dup_idx,
         horizontal=True,
     )
-    submitted = st.form_submit_button("SIMPAN DAN KIRIM KE PUSAT TELAAH", type="primary", use_container_width=True)
+    
+    submitted = st.form_submit_button("💾 SIMPAN DAN KIRIM KE PUSAT TELAAH", type="primary", use_container_width=True)
 
 if submitted:
     parsed = pd.to_datetime(published, errors="coerce") if published else None
@@ -176,18 +214,20 @@ if submitted:
     duplicates = find_duplicate_news(
         result["link"], title, media, result["nama_upt"], published_value or "", visible_news
     )
+    
+    # Jika memilih "Batalkan jika duplikat" dan memang ada duplikat
     if not duplicates.empty and duplicate_action == "Batalkan jika duplikat":
-        st.error("Penyimpanan dibatalkan karena ditemukan berita yang sama atau sangat mirip.")
+        st.error("❌ Penyimpanan dibatalkan karena ditemukan berita yang sama atau sangat mirip.")
         st.dataframe(
             duplicates[[c for c in ["judul", "nama_upt", "media", "status_verifikasi", "duplicate_reason", "similarity", "link"] if c in duplicates.columns]],
-            width="stretch",
+            use_container_width=True,
             hide_index=True,
             column_config={"link": st.column_config.LinkColumn("Link", display_text="Buka")},
         )
         st.stop()
 
     if len(files or []) > 5:
-        st.error("Maksimal 5 lampiran per berita.")
+        st.error("❌ Maksimal 5 lampiran per berita.")
         st.stop()
 
     payload = {
@@ -222,9 +262,10 @@ if submitted:
         ),
         "duplicate_of": str(duplicates.iloc[0].get("id") or "") if not duplicates.empty else None,
     }
+    
     ok, message, news_id = save_news(payload, user.username, user.role)
     if not ok:
-        st.error(message)
+        st.error(f"❌ {message}")
         st.stop()
 
     attachment_errors: list[str] = []
@@ -241,10 +282,21 @@ if submitted:
         except Exception as exc:
             attachment_errors.append(f"{file.name}: {exc}")
 
-    st.success(message)
+    st.success(f"✅ {message}")
     if urgency in {"Tinggi", "Kritis"}:
-        st.warning("Peringatan Awal telah diaktifkan dan masuk antrean prioritas Pusat Telaah.")
+        st.warning("⚠️ Peringatan Awal telah diaktifkan dan masuk antrean prioritas Pusat Telaah.")
     if attachment_errors:
         st.warning("Sebagian lampiran gagal diunggah: " + "; ".join(attachment_errors))
+        
     st.session_state.analysis_result = None
+    st.session_state.duplicate_info = None
     st.rerun()
+
+# --- 6. PREVIEW BERITA TERAKHIR ---
+with st.expander("📊 Lihat 5 Berita Terakhir di Database", expanded=False):
+    df_recent = scope_news(fetch_news_df(), user, all_upt)
+    if not df_recent.empty:
+        cols_to_show = [c for c in ["tanggal_publikasi", "media", "judul", "sentimen", "nama_upt", "status_verifikasi"] if c in df_recent.columns]
+        st.dataframe(df_recent.tail(5)[cols_to_show], use_container_width=True, hide_index=True)
+    else:
+        st.info("Belum ada data berita yang tersedia.")
