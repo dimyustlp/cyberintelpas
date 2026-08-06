@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, timedelta
-import pandas as pd
+import os
+import sys
+from datetime import datetime, timedelta
+
+# --- TAMBAHAN PATH AGAR FOLDER UTAMA TERBACA OLEH PYTHON ---
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Impor dari service yang sudah kita bangun sebelumnya
 from services.database import fetch_news_df
@@ -28,7 +32,7 @@ def run_daily_automated_report():
         f"{now.strftime('%d %B %Y')} (07.00 WIB)"
     )
 
-    # 2. Ambil seluruh data berita dari database Google Sheets
+    # 2. Ambil seluruh data berita dari database
     df_news = fetch_news_df()
     if df_news.empty:
         logger.warning("Database berita kosong. Mengirimkan notifikasi nihil ke Telegram.")
@@ -39,11 +43,9 @@ def run_daily_automated_report():
         )
         return
 
-    # 3. Filter berita untuk rentang waktu harian (opsional: filter tanggal/status)
-    # Jika tabel Anda memiliki kolom 'tanggal_publikasi' atau 'created_at':
+    # 3. Filter berita untuk rentang waktu harian
     df_filtered = df_news.copy()
     if "status_verifikasi" in df_filtered.columns:
-        # Prioritaskan berita yang sudah ditelaah atau tidak ditolak
         df_filtered = df_filtered[df_filtered["status_verifikasi"] != "Ditolak"]
 
     total = len(df_filtered)
