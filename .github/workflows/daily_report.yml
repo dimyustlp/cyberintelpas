@@ -17,10 +17,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: 3. Memperbarui Pip & Menginstal Modul Inti Laporan
+      - name: 3. Memperbarui Pip & Menginstal Seluruh Modul
         run: |
           python -m pip install --upgrade pip
-          pip install weasyprint jinja2 requests pandas
+          pip install streamlit weasyprint jinja2 requests pandas gspread google-auth
 
       - name: 4. Menjalankan Skrip Laporan Harian Otomatis
         env:
