@@ -30,7 +30,22 @@ if user is None:
     st.stop()
 
 render_sidebar_profile(user)
-render_role_briefing(user)
+
+# --- PERBAIKAN BUG BRIEFING DIMULAI DI SINI ---
+# 1. Kita buat ingatan agar Streamlit tahu apakah briefing sudah ditutup
+if "briefing_selesai" not in st.session_state:
+    st.session_state.briefing_selesai = False
+
+# 2. Jika belum selesai, tampilkan briefing dan tombol tutup
+if not st.session_state.briefing_selesai:
+    st.info("📢 Jangan lupa untuk membaca briefing harian Anda hari ini.")
+    render_role_briefing(user)
+    
+    # Tombol untuk menutup briefing secara permanen di sesi ini
+    if st.button("Saya Mengerti & Tutup Briefing"):
+        st.session_state.briefing_selesai = True
+        st.rerun() # Refresh halaman agar briefing hilang
+# --- PERBAIKAN BUG BRIEFING SELESAI DI SINI ---
 
 pages: dict[str, list[st.Page]] = {
     "Eksekutif": [
