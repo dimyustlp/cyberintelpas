@@ -2,9 +2,8 @@ name: Auto Daily Cyber-Intelpas Report
 
 on:
   schedule:
-    # Pukul 22.15 UTC = Pukul 05.15 WIB Setiap Hari
     - cron: '15 22 * * *'
-  workflow_dispatch: # Pemicu tombol manual untuk pengujian sewaktu-waktu
+  workflow_dispatch:
 
 jobs:
   send-daily-report:
@@ -16,7 +15,7 @@ jobs:
       - name: 2. Menyiapkan Lingkungan Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'   # <--- Ubah dari '3.10' menjadi '3.11'
 
       - name: 3. Menginstal Dependensi Sistem
         run: pip install -r requirements.txt
