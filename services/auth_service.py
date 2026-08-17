@@ -41,7 +41,7 @@ def current_user() -> UserContext | None:
         }
         clean = {key: value.get(key) for key in allowed if key in value}
         clean.setdefault("id", "session-user")
-        clean.setdefault("username", "admin")
+        clean.setdefault("username", "")
         clean.setdefault("full_name", clean["username"])
         clean.setdefault("role", "executive_viewer")
         clean["role"] = normalize_role(clean.get("role"))
@@ -128,7 +128,11 @@ def _has_active_database_super_admin() -> bool:
 
 
 def authenticate(username: str, password: str) -> UserContext | None:
-    clean_username = (username or "admin").strip().casefold()
+    # Mengosongkan nilai default agar tidak fallback otomatis ke admin
+    clean_username = (username or "").strip().casefold()
+    if not clean_username:
+        return None
+        
     user = _authenticate_database(clean_username, password)
     if user:
         return user
@@ -162,8 +166,9 @@ def render_login() -> None:
     _, center, _ = st.columns([1, 1.25, 1])
     with center:
         with st.form("login_form"):
-            username = st.text_input("Nama pengguna", value="admin")
-            password = st.text_input("Kata sandi / kode akses", type="password")
+            # Kolom username dibuat bersih/kosong dengan placeholder pembantu
+            username = st.text_input("Nama pengguna", value="", placeholder="Masukkan nama pengguna")
+            password = st.text_input("Kata sandi / kode akses", type="password", placeholder="Masukkan kata sandi")
             submitted = st.form_submit_button("MASUK", type="primary", use_container_width=True)
         if submitted:
             user = authenticate(username, password)
